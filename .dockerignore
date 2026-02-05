@@ -1,0 +1,7 @@
+frontend/
+frontend/node_modules/
+docs/
+.git/
+*.md
+docker-compose.yml
+railway.toml
