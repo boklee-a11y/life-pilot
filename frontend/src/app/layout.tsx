@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ToastProvider } from "@/components/Toast";
 import { Header } from "@/components/Header";
 
 const inter = Inter({
@@ -30,10 +31,12 @@ export default function RootLayout({
     <html lang="ko" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider>
-          <Header />
-          <main className="mx-auto min-h-[calc(100dvh-3.5rem)] max-w-5xl px-4 py-6">
-            {children}
-          </main>
+          <ToastProvider>
+            <Header />
+            <main className="mx-auto min-h-[calc(100dvh-3.5rem)] max-w-5xl px-4 py-6">
+              {children}
+            </main>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

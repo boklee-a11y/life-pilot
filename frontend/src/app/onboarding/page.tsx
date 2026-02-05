@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useToast } from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
 
 const PLATFORM_PRESETS = [
@@ -30,12 +31,12 @@ interface UrlEntry {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { accessToken } = useAuthStore();
+  const { accessToken, isAuthenticated } = useAuthGuard();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [urls, setUrls] = useState<UrlEntry[]>([]);
   const [currentUrl, setCurrentUrl] = useState("");
   const [currentPlatform, setCurrentPlatform] = useState("");
-  const [customUrl, setCustomUrl] = useState("");
   const [jobCategory, setJobCategory] = useState("");
   const [yearsOfExperience, setYearsOfExperience] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -45,7 +46,6 @@ export default function OnboardingPage() {
     setUrls([...urls, { url: url.trim(), platform }]);
     setCurrentUrl("");
     setCurrentPlatform("");
-    setCustomUrl("");
   };
 
   const removeUrl = (index: number) => {
@@ -77,12 +77,14 @@ export default function OnboardingPage() {
       }
 
       router.push("/analyzing");
-    } catch {
-      alert("오류가 발생했습니다. 다시 시도해주세요.");
+    } catch (err) {
+      toast("error", err instanceof Error ? err.message : "오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setLoading(false);
     }
   };
+
+  if (!isAuthenticated) return null;
 
   return (
     <div className="mx-auto max-w-lg pt-8">

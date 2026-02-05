@@ -1,10 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "@/stores/auth";
 
 export function Header() {
   const { user, logout } = useAuthStore();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--card)]">
@@ -13,7 +19,16 @@ export function Header() {
           Life_Pilot
         </Link>
 
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-3">
+          {mounted && (
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="rounded-lg p-2 text-sm text-[var(--muted-foreground)] transition hover:bg-[var(--muted)]"
+              title={theme === "dark" ? "라이트 모드" : "다크 모드"}
+            >
+              {theme === "dark" ? "\u2600\uFE0F" : "\u{1F319}"}
+            </button>
+          )}
           {user ? (
             <>
               <Link

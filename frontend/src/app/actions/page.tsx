@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useToast } from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
 
 /* ── Types ───────────────────────────────────── */
@@ -52,9 +53,9 @@ const DIFFICULTY_LABELS: Record<string, string> = {
 };
 
 const DIFFICULTY_COLORS: Record<string, string> = {
-  easy: "bg-green-100 text-green-700",
-  medium: "bg-yellow-100 text-yellow-700",
-  hard: "bg-red-100 text-red-700",
+  easy: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  medium: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  hard: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
 const SORT_OPTIONS = [
@@ -66,7 +67,8 @@ const SORT_OPTIONS = [
 /* ── Component ───────────────────────────────── */
 
 export default function ActionsPage() {
-  const { accessToken } = useAuthStore();
+  const { accessToken, isAuthenticated } = useAuthGuard();
+  const { toast } = useToast();
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterArea, setFilterArea] = useState<string>("");
@@ -88,7 +90,7 @@ export default function ActionsPage() {
       );
       setActions(data.actions);
     } catch {
-      // ignore
+      toast("error", "액션 목록을 불러올 수 없습니다.");
     } finally {
       setLoading(false);
     }
@@ -105,9 +107,10 @@ export default function ActionsPage() {
         method: "PATCH",
         token: accessToken,
       });
+      toast("success", "액션 상태가 업데이트되었습니다.");
       fetchActions();
     } catch {
-      // ignore
+      toast("error", "상태 변경에 실패했습니다.");
     }
   };
 
@@ -120,7 +123,7 @@ export default function ActionsPage() {
       });
       fetchActions();
     } catch {
-      // ignore
+      toast("error", "북마크 변경에 실패했습니다.");
     }
   };
 
@@ -134,6 +137,8 @@ export default function ActionsPage() {
 
   const pendingCount = actions.filter((a) => !a.is_completed).length;
   const completedCount = actions.filter((a) => a.is_completed).length;
+
+  if (!isAuthenticated) return null;
 
   if (loading) {
     return (
@@ -160,7 +165,7 @@ export default function ActionsPage() {
             onClick={() => setShowCompleted(!showCompleted)}
             className={`rounded-lg border px-3 py-1.5 text-sm transition ${
               showCompleted
-                ? "border-green-500 bg-green-50 text-green-700"
+                ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
                 : "border-[var(--border)]"
             }`}
           >
@@ -253,7 +258,7 @@ export default function ActionsPage() {
             key={action.id}
             className={`rounded-xl border bg-[var(--card)] p-5 transition ${
               action.is_completed
-                ? "border-green-200 opacity-70"
+                ? "border-green-200 opacity-70 dark:border-green-800"
                 : "border-[var(--border)]"
             }`}
           >
@@ -335,7 +340,7 @@ export default function ActionsPage() {
                 onClick={() => handleComplete(action.id)}
                 className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                   action.is_completed
-                    ? "border border-green-500 text-green-600 hover:bg-green-50"
+                    ? "border border-green-500 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
                     : "bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
                 }`}
               >

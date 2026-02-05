@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useToast } from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
 import {
   Radar,
@@ -96,12 +97,14 @@ const STATUS_COLORS: Record<string, string> = {
 /* ── Component ───────────────────────────────── */
 
 export default function DashboardPage() {
-  const { accessToken } = useAuthStore();
+  const { accessToken, isAuthenticated } = useAuthGuard();
+  const { toast } = useToast();
   const [sources, setSources] = useState<Source[]>([]);
   const [scoreData, setScoreData] = useState<ScoreData | null>(null);
   const [topActions, setTopActions] = useState<ActionItem[]>([]);
   const [expandedArea, setExpandedArea] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -118,6 +121,7 @@ export default function DashboardPage() {
       setSources(sourcesRes);
       setScoreData(scoreRes);
       if (actionsRes) setTopActions(actionsRes.actions.slice(0, 3));
+      if (!sourcesRes.length && !scoreRes) setError(true);
       setLoading(false);
     });
   }, [accessToken]);
@@ -140,6 +144,8 @@ export default function DashboardPage() {
   const insightDetailKey = (key: string) =>
     `${key}_detail` as keyof NonNullable<typeof insights>;
 
+  if (!isAuthenticated) return null;
+
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -152,8 +158,24 @@ export default function DashboardPage() {
     <div className="pt-4 pb-12">
       <h1 className="text-2xl font-bold">대시보드</h1>
 
+      {/* ── Error State ── */}
+      {error && (
+        <div className="mt-8 flex flex-col items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card)] p-12 text-center">
+          <p className="text-lg font-medium">데이터를 불러올 수 없습니다</p>
+          <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+            서버에 연결할 수 없어요. 잠시 후 다시 시도해주세요.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-lg bg-[var(--color-primary)] px-6 py-2 text-sm font-medium text-white"
+          >
+            새로고침
+          </button>
+        </div>
+      )}
+
       {/* ── No Score State ── */}
-      {!scoreData?.has_score && (
+      {!error && !scoreData?.has_score && (
         <div className="mt-8 flex flex-col items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card)] p-12 text-center">
           <p className="text-lg font-medium">아직 분석 결과가 없습니다</p>
           <p className="mt-2 text-sm text-[var(--muted-foreground)]">
@@ -466,11 +488,11 @@ export default function DashboardPage() {
 
       {/* ── Nudge: Add More Data ── */}
       {scoreData?.has_score && scoreData.analysis_accuracy && scoreData.analysis_accuracy < 80 && (
-        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-medium text-amber-800">
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
             더 많은 프로필을 연동하면 분석 정확도가 높아집니다
           </p>
-          <p className="mt-1 text-xs text-amber-600">
+          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
             현재 정확도 {scoreData.analysis_accuracy}% — 프로필을 추가하면
             최대 {Math.min(Math.round(scoreData.analysis_accuracy + 15), 100)}%까지 올릴 수 있어요.
           </p>
