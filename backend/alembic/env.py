@@ -1,4 +1,6 @@
 import asyncio
+import os
+import ssl
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -13,6 +15,15 @@ from app.models import *  # noqa: F401, F403 - import all models for metadata
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Override DB URL from environment variable if set
+db_url = os.getenv("DATABASE_URL", "")
+if db_url:
+    if db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if "?" in db_url:
+        db_url = db_url.split("?")[0]
+    config.set_main_option("sqlalchemy.url", db_url)
 
 target_metadata = Base.metadata
 
@@ -38,10 +49,17 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
+    connect_args = {}
+    url = config.get_main_option("sqlalchemy.url", "")
+    if "neon.tech" in url:
+        ssl_context = ssl.create_default_context()
+        connect_args["ssl"] = ssl_context
+
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
 
     async with connectable.connect() as connection:
